@@ -2,11 +2,35 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\JsonResponse;
 use App\Services\SpotifyService;
+use Illuminate\Http\JsonResponse;
+use App\Http\Controllers\Controller;
 
 class SpotifyController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            $AUTH_USER = env('API_USER', 'user');
+            $AUTH_PASS = env('API_PASS', 'password');
+
+            $hasSuppliedCredentials = $request->getUser() && $request->getPassword();
+
+            $isNotAuthenticated = (
+                !$hasSuppliedCredentials ||
+                $request->getUser() !== $AUTH_USER ||
+                $request->getPassword() !== $AUTH_PASS
+            );
+
+            if ($isNotAuthenticated) {
+                $headers = ['WWW-Authenticate' => 'Basic realm="Restricted Area"'];
+                return response('Unauthorized', 401, $headers);
+            }
+
+            return $next($request);
+        });
+    }
+
     /**
      * Obtener información de un artista de Spotify por ID.
      *
